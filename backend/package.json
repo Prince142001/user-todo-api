@@ -1,0 +1,20 @@
+{
+  "name": "tail-of-tails",
+  "version": "1.0.0",
+  "description": "Mini project to learn APIs",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node src/index.js",
+    "dev": "nodemon -r dotenv/config src/index.js"
+  },
+  "author": "Prince Vishwakarma",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
