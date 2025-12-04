@@ -1,2 +1,179 @@
 username - user-todo-api
 password - user-todo-api
+
+backend
+- src
+- - controllers
+- - - user.controller.js
+- - db
+- - - index.js
+- - routes
+- - - user.route.js
+- - app.js
+- - constants.js
+- - index.js
+
+user.controller.js
+const registerUser = async (req, res) => {
+    try {
+        return res.status(400).json({
+            message: "Message OK...",
+        });
+    } catch (error) {
+        console.log("Error in register user...");
+        res.status(500).json({
+            message: "Failed to register user.",
+        });
+    }
+};
+
+export { registerUser };
+
+
+db/index.js
+import mongoose from "mongoose";
+import { DB_NAME } from "../constants.js";
+
+
+const connectDB = async () => {
+    try {
+        const connectionInstance = await mongoose.connect(
+            `${process.env.MONGO_DB_URI}/${DB_NAME}`
+        );
+        console.log(
+            "MongoDB connected!! | Connection Host",
+            connectionInstance.connection.host
+        );
+    } catch (error) {
+        console.error("MongoDB connection error: ", error);
+        process.exit(1);
+    }
+};
+
+export default connectDB;
+
+
+user.model.js
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const userSchema = new mongoose.Schema(
+    {
+        fullName: {
+            type: String,
+            required: [true, "Name is required"],
+            trim: true,
+            lowercase: true,
+            index: true,
+        },
+        email: {
+            type: String,
+            required: [true, "Email is required"],
+            unique: true,
+            trim: true,
+            lowercase: true,
+        },
+        password: {
+            type: String,
+            required: [true, "Password is required"],
+            trim: true,
+            min: [8, "Must be atleast 8 digit"],
+        },
+    },
+    { timestamps: true }
+);
+
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+});
+
+userSchema.methods.isPasswordCorrect = async function (password) {
+    return await becrypt.compare(password, this.password);
+};
+
+userSchema.methods.generateAccessToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+            fullName: this.fullName,
+            email: this.email,
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+        }
+    );
+};
+
+export const User = mongoose.model("User", userSchema);
+
+
+user.route.js
+import { Router } from "express";
+import { registerUser } from "../controllers/user.controller";
+
+const router = Router();
+
+router.route("/register").post(registerUser);
+
+export default router;
+
+
+app.js
+import express from express;
+import cookieParser from "cookie-parser";
+import cors from "cors"
+import userRouter from "./routes/user.route.js";
+
+const app = express()
+
+app.use(cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true
+}))
+
+app.use(express({
+    limit: "16kb"
+}))
+app.use(cookieParser());
+
+app.use("/api/auth", userRouter)
+
+export {app}
+
+
+constants.js
+export const DB_NAME = "user-todo-api";
+
+
+
+src/index.js
+import express from "express";
+import connectDB from "./db/index.js";
+
+import dotenv from "dotenv";
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+dotenv.config({
+    path: "./env",
+});
+
+connectDB()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server started on the port ${PORT}`);
+        });
+        app.on("error", (error) => {
+            console.log("Error", error);
+            throw error;
+        });
+    })
+    .catch((error) => {
+        console.error("ERROR", error);
+        throw error;
+    });
