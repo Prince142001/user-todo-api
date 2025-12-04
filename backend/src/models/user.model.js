@@ -24,18 +24,20 @@ const userSchema = new mongoose.Schema(
             trim: true,
             min: [8, "Must be atleast 8 digit"],
         },
+        refreshToken: {
+            type: String,
+        },
     },
     { timestamps: true }
 );
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
     if (!this.isModified("password")) return next();
     this.password = await bcrypt.hash(this.password, 10);
-    next();
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
-    return await becrypt.compare(password, this.password);
+    return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = function () {
