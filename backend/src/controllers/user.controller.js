@@ -6,7 +6,7 @@ const registerUser = async (req, res) => {
         // console.log(fullName, email, password);
         if (!fullName || !email || !password) {
             console.log("All fields are required");
-            return res.status(201).json({
+            return res.status(400).json({
                 message: "All fields are required",
             });
         }
@@ -49,4 +49,66 @@ const registerUser = async (req, res) => {
     }
 };
 
-export { registerUser };
+const loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            console.log("Email and password required.");
+            res.status(400).json({
+                message: "Email and password required.",
+            });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (!existingUser) {
+            console.log("User not found.");
+            return res.status(404).json({
+                message: "User not found.",
+            });
+        }
+
+        const isPasswordCorrect =
+            await existingUser.isPasswordCorrect(password);
+
+        if (!isPasswordCorrect) {
+            console.log("Unauthorized user.");
+            return res.status(401).json({
+                message: "Invalid user credentials.",
+            });
+        }
+
+        const token = existingUser.generateAccessToken();
+
+        return res.status(200).json({
+            message: "Login successfully",
+            token: token,
+            user: {
+                _id: existingUser._id,
+                fullname: existingUser.fullName,
+                email: existingUser.email,
+            },
+        });
+    } catch (error) {
+        console.log("Error in login user", error);
+        res.status(500).json({
+            message: "Failed to login user.",
+        });
+    }
+};
+
+const userProfile = async (req, res) => {
+    try {
+        res.status(200).json({
+            message: "User profile fetched successfully",
+            User: req.user,
+        });
+    } catch (error) {
+        console.log("Error in fetching user profile", error);
+        res.status(500).json({
+            message: "Failed to fetch user profile.",
+        });
+    }
+};
+
+export { registerUser, loginUser, userProfile };
