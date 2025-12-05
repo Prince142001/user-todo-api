@@ -2,7 +2,7 @@ import { Todo } from "../models/todo.model.js";
 
 const createTodo = async (req, res) => {
     try {
-        const { title, description } = req.body;
+        const { title, description, status } = req.body;
 
         if (!title) {
             console.log("Title is required.");
@@ -14,6 +14,7 @@ const createTodo = async (req, res) => {
         const todo = await Todo.create({
             title,
             description: description || "",
+            status: status,
             createdBy: req.user._id,
         });
 
@@ -44,4 +45,22 @@ const createTodo = async (req, res) => {
     }
 };
 
-export { createTodo };
+const fetchTodos = async (req, res) => {
+    try {
+        const todos = await Todo.find({ createdBy: req.user._id });
+
+        return res.status(200).json({
+            message: "Todos fetched successfully",
+            count: todos.length,
+            todos: todos,
+        });
+    } catch (error) {
+        console.log("Error fetching todos:", error);
+        res.status(500).json({
+            message: "Failed to fetch todos",
+            error: error.message,
+        });
+    }
+};
+
+export { createTodo, fetchTodos };
