@@ -63,4 +63,49 @@ const fetchTodos = async (req, res) => {
     }
 };
 
-export { createTodo, fetchTodos };
+const updateStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({
+                message: "Status is required",
+            });
+        }
+
+        const updatedTodo = await Todo.findOneAndUpdate(
+            {
+                _id: id,
+                createdBy: req.user._id,
+            },
+            {
+                status: status,
+            },
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
+
+        if (!updatedTodo) {
+            return res.status(404).json({
+                message:
+                    "Todo not found or you are not authorized to update it",
+            });
+        }
+
+        return res.status(200).json({
+            message: "Todo status updated successfully",
+            todo: updatedTodo,
+        });
+    } catch (error) {
+        console.log("Error updating status:", error);
+        res.status(500).json({
+            message: "Failed to update status",
+            error: error.message,
+        });
+    }
+};
+
+export { createTodo, fetchTodos, updateStatus };
